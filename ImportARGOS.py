@@ -22,7 +22,7 @@ outputSR = arcpy.SpatialReference(54002)
 ## Prepare a new feature class to which we'll add tracking points
 # Create an empty feature class; requires the path and name as separate parameters
 outPath,outName = os.path.split(outputFC)
-arcpy.CreateFeatureclass_management(outPath, outName, "POINT","","","",outputSR)
+arcpy.CreateFeatureclass_management(outPath,outName,"POINT","","","",outputSR)
 
 # Add TagID, LC, IQ, and Date fields to the output feature class
 arcpy.AddField_management(outputFC,"TagID","LONG")
@@ -47,6 +47,9 @@ while lineString:
         
         # Extract attributes from the datum header line
         tagID = lineData[0]
+        obsDate = lineData[3]
+        obsTime = lineData[4]
+        obsLC = lineData[7]
         
         # Extract location info from the next line
         line2String = inputFileObj.readline()
@@ -57,9 +60,32 @@ while lineString:
         # Extract the date we need to variables
         obsLat = line2Data[2]
         obsLon= line2Data[5]
+
+        #Try some code:
+        try:
         
-        # Print results to see how we're doing
-        print (tagID,"Lat:"+obsLat,"Long:"+obsLon)
+            # Print results to see how we're doing
+            print (tagID,"Lat:"+obsLat,"Long:"+obsLon,
+                   "Date: "+obsDate,"Time: "+obsTime,"LC: "+obsLC)
+
+            # Convert raw coordinate strings to numbers
+            if obsLat[-1] == 'N':
+                obsLat = float(obsLat[:-1])
+            else:
+                obsLat = float(obsLat[:-1]) * -1
+            if obsLon[-1] == 'E':
+                obsLon = float(obsLon[:-1])
+            else:
+                obsLon = float(obsLon[:-1]) * -1
+
+            # Construct a point object from the feature class
+            obsPoint = arcpy.Point()
+            obsPoint.X = obsLon
+            obsPoint.Y = obsLat
+
+        #Handle any error
+        except Exception as e:
+            print(f"Error adding record {tagID} to the output: {e}")
         
     # Move to the next line so the while loop progresses
     lineString = inputFileObj.readline()
